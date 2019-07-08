@@ -42,7 +42,7 @@ from ReAudio import ReAudio
 re = ReAudio('demo.csv')
 re.getSpeakingTime(True,'sec')
 ```
-
+![](https://github.com/pankajchejara23/ReAudio_library/blob/master/speaking.png)
 
 #### 4. generateEdgeFile()
 This function generate a edge file for drawing graph of interactions. To remove the wrong entries, we assumed that atleaset four consecutive entries (one entry represents speaking time for 200 ms) must be there to qualified as a speaking activity. As we observed that during identifying the DoA some wrong entries are also recorded. This function uses user labels assigned to each entry and computes the continuous occurrence.
@@ -64,3 +64,4 @@ re = ReAudio('demo.csv')
 re.assignUserLabel()
 re.drawNetwork()
 ```
+![](https://github.com/pankajchejara23/ReAudio_library/blob/master/network.png)
