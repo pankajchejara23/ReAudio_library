@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from collections import Counter
 import networkx as nx
 import sys
-
+import statistics
 class ReAudio(object):
 
     """
@@ -23,6 +23,7 @@ class ReAudio(object):
         self.file_name = file_name
         self.Directions = np.array([0,0,0,0])
         self.edge_list=list()
+
 
 
     """
@@ -59,13 +60,40 @@ class ReAudio(object):
             # Sort the degrees on the basis of their counted frequency
             sorted_deg_freq = sorted(degree_frequency.items(),key=lambda x:x[1])
 
-            # Get four highest degrees
-            highest_degrees = sorted_deg_freq[-4:]
+
+
+
+
+
+            highest_degrees = sorted_deg_freq[-6:]
 
 
             # Sort the order of highest degrees and return
             highest_degrees = sorted(highest_degrees,key=lambda x:x[0])
-            return highest_degrees
+
+            high_four_degrees = []
+
+            # Get four highest degrees
+
+            for item in highest_degrees:
+
+                if len(high_four_degrees)==0:
+                    high_four_degrees.append(item[0])
+                else:
+                    if abs(item[0]-high_four_degrees[-1])%360 > 40:
+
+                        high_four_degrees.append(item[0])
+                    else:
+                        if item[1]>degree_frequency[high_four_degrees[-1]]:
+                            high_four_degrees.remove(high_four_degrees[-1])
+                            high_four_degrees.append(item[0])
+                        else:
+                            pass
+
+
+
+
+            return high_four_degrees
         except Exception as e:
             print('Exception:',sys.exc_info())
 
@@ -85,7 +113,7 @@ class ReAudio(object):
         highDegrees = self.getHighestFourDegrees(plot=False)
 
         # Considering degrees in ascending order corresponds to user1 to user4
-        users = np.array([item[0] for item in highDegrees])
+        users = np.array([item for item in highDegrees])
 
 
         # This function takes the degree and check to which highly occruing degree it is more close to.
@@ -110,7 +138,7 @@ class ReAudio(object):
 
         # Add one column to the pandas dataframe with name 'users' which contains corresponding user identifier
         self.file['users'] = self.file['degree'].map(assign_label)
-
+        return self.file
 
 
 
@@ -123,8 +151,9 @@ class ReAudio(object):
     """
     def getSpeakingTime(self,plot,time='sec'):
 
-        if 'users' not in self.file.columns:
-            self.assignUserLabel()
+        #if 'users' not in self.file.columns:
+        self.assignUserLabel()
+
 
         # Count the frequency for each user
         speech_count = self.file.groupby('users').count()
@@ -142,7 +171,7 @@ class ReAudio(object):
 
             # Same as above but for time unit minute
             elif time=='min':
-                user_speak_time[i+1] = speech_count.loc[i+1,'degree']*float(200/60*1000)
+                user_speak_time[i+1] = speech_count.loc[i+1,'degree']*float(200/(60*1000))
 
             # For time unit hour
             elif time=='hour':
@@ -262,7 +291,7 @@ class ReAudio(object):
                 self.edge_list.append((node1,node2))
 
                 # Print the edge
-                print("{},{}".format(node1,node2))
+                #print("{},{}".format(node1,node2))
 
                 # Write the edge in the file
                 file.write("{},{}\n".format(node1,node2))
@@ -286,7 +315,7 @@ class ReAudio(object):
                  Above average speaker: green
 
     """
-    def drawNetwork(self):
+    def drawNetwork(self,edge_list=None):
 
         # Generate the edge edge_list
         self.generateEdgeFile()
@@ -301,7 +330,11 @@ class ReAudio(object):
         # Create an empty graph using networkx library
         G = nx.Graph()
 
-        # Iterate over edge list
+
+
+
+
+            # Iterate over edge list
         for edge in self.edge_list:
 
         # Check if the current edge already exist or not
@@ -314,7 +347,7 @@ class ReAudio(object):
                 G.remove_edge(edge[0],edge[1])
 
                 # Add it again with updated weight
-                G.add_edge(edge[0],edge[1],weight=w+.5)
+                G.add_edge(edge[0],edge[1],weight=w+.15)
 
             else:
 
@@ -333,22 +366,37 @@ class ReAudio(object):
         # Generate the colormap for the each node on the basis of their speaking time
         color_map = []
 
+        sizes=[]
+
+        sp_total = sum(sp_beh.values())
+        print(type(sp_beh.values()))
+        sp_std = statistics.stdev(sp_beh.values())
+
+
+
+
+
         # iterate for each node in the graph
         for node in G:
-
+            print(node,':',sp_beh[node])
+            size = float(sp_beh[node]*10)/sp_total
+            print (size)
+            sizes.append( 400 * (size+1))
+            dev = float(sp_beh[node]-sp_total)/sp_std
             # Assign red color if speaking time is below average
-            if sp_beh[node]<sp_avg-1:
+            if dev <0:
                 color_map.append('red')
             # Assign plum color if speaking time is near average
-            elif sp_beh[node]<sp_avg+1 and sp_beh[node]>sp_avg-1:
+            elif dev<1 and dev>-1:
                 color_map.append('plum')
 
             # Assign green for above average
             else:
                 color_map.append('lawngreen')
 
+        labels = {1:'Adolfo',2:'Pankaj',3:'Reet',4:'Tobias'}
         # Draw the network
-        nx.draw(G, pos,node_color=color_map,  edges=edges,width=weights,with_labels=True)
+        nx.draw(G, pos,node_size = sizes,node_color=color_map,  edges=edges,width=weights,labels=labels,with_labels=True)
 
         # Show the network
         plt.show()
