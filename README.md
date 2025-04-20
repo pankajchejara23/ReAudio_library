@@ -1,67 +1,140 @@
-# ReAudio
-ReAudio is a python library to analyze the data recieved by ReSpeaker 4 Mic with direction of arrival algorithm. ReSpeaker comes with DoA (Direction of arrival) and Voice Activation Detection (VAD) algorithm which eases the analysis work. This library will help in extracting the speaking time, generating the edge list for social network and drawing the social network of interaction among participants.
+# ReAudio  
 
+**ReAudio** is a Python library for analyzing data from the **ReSpeaker 4-Mic Array** using its built-in **Direction of Arrival (DoA)** and **Voice Activity Detection (VAD)** algorithms. The library simplifies extracting speaking times, generating edge lists for social network analysis, and visualizing interaction patterns among participants.
 
+---
 
-# Functions
-#### 1. getHighestFourDegree(plot)
-This function process the input file and provide four highest occuring DoA in degrees. It takes one argument plot (Boolean) as flag to plot the distribution of DoA degrees. It returns a list of four items (degree,frequency) where degree represents the DoA and frequency represents the number of times that degree appears in the file.
-Example:
+## Features
+
+- Extract speaking times for each participant
+- Generate edge lists for social network analysis
+- Visualize interaction patterns
+- Built-in support for ReSpeaker's DoA and VAD algorithms
+
+## Usage
+
+### 1. Importing the Library
+
 ```python
 from ReAudio import ReAudio
-re = ReAudio('demo.csv')
+```
+
+### 2. Initializing with Data
+```python
+re = ReAudio('./data/demo.csv')
+```
+
+### 3. Available Methods
+
+#### `getHighestFourDegree(plot)`
+
+Processes the input file and returns the four most frequently occurring Direction of Arrival (DoA) angles in degrees.
+
+**Parameters**:
+* plot (Boolean type): if want to plot the distribution of DoA present in the data.
+
+**Returns**:
+Returns a list of four most occuring DoA angles.
+
+**Example Usage**:
+```python
+from ReAudio import ReAudio
+re = ReAudio('./data/demo.csv')
 degrees = re.getHighestFourDegree(True)
 ```
-![](https://github.com/pankajchejara23/ReAudio_library/blob/master/distri.png)
+![](./images/distri.png)
 
-#### 2.assignUserLabel()
-This function assign the user labels on the basis of DoA. It assumes the following orientation for users sitting arrangement.
-![](https://github.com/pankajchejara23/ReAudio_library/blob/master/re_orient.png)
-This function first finds out the four highly occuring directions and then sort those direction in ascending order. Then, first degree considered as user-1 DoA, second for user-2, third for user-3 and fourth for user-4.
+#### `assignUserLabel()`
 
-Once the DoA is associated with their corresponding users, each degree then assigned a user label. This assignment is done on the basis of the closeness with identified DoA for each users.
-Example:
+Assigns user identifiers (1-4) based on Direction of Arrival (DoA) data, assuming participants are seated in clockwise order around the ReSpeaker array.
+
+##### Orientation Assumptions
+![ReSpeaker User Orientation](./images/re_orient.png)
+
+##### Working
+1. **Identifies Top Directions**:
+   - Extracts the four most frequent DoA angles using `getHighestFourDegrees()`
+   - Sorts these angles in ascending order (0° to 360°)
+
+2. **User Mapping**:
+   - 1st angle → User 1 (0° reference)
+   - 2nd angle → User 2 (90°)
+   - 3rd angle → User 3 (180°)
+   - 4th angle → User 4 (270°)
+
+3. **Label Assignment**:
+   - For each recorded DoA value:
+      - Calculates angular difference to all four reference directions
+      - Assigns the label of the closest reference direction
+   - Adds a 'users' column to the dataset with these labels
+
+##### Returns
+- `DataFrame`: Original dataset with added 'users' column containing integer labels (1-4)
+
+**Example Usage**:
+
 ```python
 from ReAudio import ReAudio
-re = ReAudio('demo.csv')
-re.assignUserLabel(True)
+re = ReAudio('./data/demo.csv')
+re.assignUserLabel()
 ```
 
-#### 3. getSpeakingTime(plot,time)
-This function computes speaking time for each user. Each entry in the file represent a speech activity for 200 ms. This function simply count the number of entries for each user and then multiply it with 200/1000 to get speaking time in seconds.
+#### `getSpeakingTime(plot,time)`
+Calculates the cumulative speaking duration for each participant based on voice activity detection events. Each entry in the file represents a speech activity for 200 ms. This function simply counts the number of entries for each user and then multiply it with 200/1000 to get speaking time in seconds.
+
 **Parameters**:
 * plot (Boolean type): if want to plot the speaking time for each user, specify True otherwise False.
 * time(string, possible values=['sec','min','hour']): Specify the time unit for computing speaking time.
 
-**Return value**
-* Dictionary containing user speaking time. keys:users, values:speaking time
+**Returns**
+* Dictionary containing user speaking time in the form `user:speaking time`.
 
-**Example:**
+**Example Usage:**
 ```python
 from ReAudio import ReAudio
-re = ReAudio('demo.csv')
+re = ReAudio('./data/demo.csv')
 re.getSpeakingTime(True,'sec')
 ```
-![](https://github.com/pankajchejara23/ReAudio_library/blob/master/speaking.png)
+![](./images/speaking.png)
 
-#### 4. generateEdgeFile()
-This function generate a edge file for drawing graph of interactions. To remove the wrong entries, we assumed that atleaset four consecutive entries (one entry represents speaking time for 200 ms) must be there to qualified as a speaking activity. As we observed that during identifying the DoA some wrong entries are also recorded. This function uses user labels assigned to each entry and computes the continuous occurrence.
-For example:
-> a = [1,1,1,2,2,2,2,3,3]
-> continuous_occurrence = {1:3,2:4,3:2}
+#### `generateEdgeFile()`
+Generates a weighted edge list representing speaker turn-taking patterns, suitable for social network analysis.
 
-It then uses these occurrence to remove entries having less than 4 occurrence. After this step final user speaking sequence is generated. This sequence is then used to generate edge list. This function generates a file 'edges.txt' which can be used by graph generating software to draw graphs.
+##### Noise Filtering Methodology
+- **Minimum Duration Threshold**: 
+  - Requires ≥4 consecutive entries (800ms) to qualify as valid speech
+  - Filters brief false positives from DoA detection
+- **Transition Logic**:
+  - Only considers transitions between different speakers
+  - Adjacent entries from same speaker are merged
 
-#### 5. drawNetwork()
-This function draws an interaction network between participants. If an edge is repeated then its weight is increased correspondigly. The thickness of edge determines its frequency.
+##### Output Format
+Creates `edges.txt` with tab-separated values:
 
-For nodes, three different colors are used. If a node's correpsonding user has spoken more than average speaking time then it's represented using green color code. In the case of below average speaking time, red color code is used. For the remaining category, plum color code is used.
+**Example**
 
-**Example:**
+```python
+a = [1,1,1,2,2,2,2,3,3]
+continuous_occurrence = {1:3,2:4,3:2}
+```
+First the function counts the continuous occurrences of speaking activities. Then, it uses those occurrences to remove entries having less than 4 occurrence. After this step final user speaking sequence is generated. This sequence is then used to generate edge list. This function generates a file 'edges.txt' which can be used by graph generating software to draw graphs.
+
+#### `drawNetwork()`
+This function generates an interaction network among participants. If an edge between two nodes appears multiple times, its weight increases accordingly. The thickness of each edge reflects the frequency of interactions.
+
+Nodes are color-coded based on speaking time using three distinct colors:
+
+* **Green**: Indicates users who have spoken more than the average speaking time.
+
+* **Red**: Represents users who have spoken less than the average.
+
+* **Plum**: Used for users whose speaking time is close to the average.
+
+**Example usage:**
 ```python
 from ReAudio import ReAudio
-re = ReAudio('demo.csv')
+re = ReAudio('./data/demo.csv')
 re.assignUserLabel()
 re.drawNetwork()
 ```
-![](https://github.com/pankajchejara23/ReAudio_library/blob/master/network.png)
+![](./images/network.png)

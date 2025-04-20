@@ -25,7 +25,6 @@ class ReAudio(object):
         self.edge_list=list()
 
 
-
     """
     getHighestFourDegrees: This function will search through the file and extract four degrees corresponding to users.
                            It simply count the degree frequency and return four degrees with highest frequencies.
@@ -60,13 +59,7 @@ class ReAudio(object):
             # Sort the degrees on the basis of their counted frequency
             sorted_deg_freq = sorted(degree_frequency.items(),key=lambda x:x[1])
 
-
-
-
-
-
             highest_degrees = sorted_deg_freq[-6:]
-
 
             # Sort the order of highest degrees and return
             highest_degrees = sorted(highest_degrees,key=lambda x:x[0])
@@ -74,7 +67,6 @@ class ReAudio(object):
             high_four_degrees = []
 
             # Get four highest degrees
-
             for item in highest_degrees:
 
                 if len(high_four_degrees)==0:
@@ -89,15 +81,9 @@ class ReAudio(object):
                             high_four_degrees.append(item[0])
                         else:
                             pass
-
-
-
-
             return high_four_degrees
         except Exception as e:
             print('Exception:',sys.exc_info())
-
-
 
 
     """
@@ -320,7 +306,6 @@ class ReAudio(object):
         # Generate the edge edge_list
         self.generateEdgeFile()
 
-
         # Get speaking time for each user
         sp_beh = self.getSpeakingTime(False)
 
@@ -329,10 +314,6 @@ class ReAudio(object):
 
         # Create an empty graph using networkx library
         G = nx.Graph()
-
-
-
-
 
             # Iterate over edge list
         for edge in self.edge_list:
@@ -350,7 +331,6 @@ class ReAudio(object):
                 G.add_edge(edge[0],edge[1],weight=w+.15)
 
             else:
-
                 # If edge doesn't exist in the graph then add it with weight .5
                 G.add_edge(edge[0],edge[1],weight=.5)
 
@@ -371,10 +351,6 @@ class ReAudio(object):
         sp_total = sum(sp_beh.values())
         print(type(sp_beh.values()))
         sp_std = statistics.stdev(sp_beh.values())
-
-
-
-
 
         # iterate for each node in the graph
         for node in G:
