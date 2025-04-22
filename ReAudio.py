@@ -1,5 +1,5 @@
 """
-      ReAudio: Library for generating interaction network and speech feature from data captured using ReSpeaker 4 Mic version 1
+      ReAudio: Library for generating interaction network and speech features from data captured using ReSpeaker 4 Mic version 1
       Developer: Pankaj Chejara
       Date: 8/07/2019
 """
@@ -236,7 +236,8 @@ class ReAudio(object):
 
 
             # Add continuous frequency of current user (sequence[i]) to the dataframe
-            df = df.append({'users':sequence[i],'conti_frequency':count},ignore_index=True)
+            record = {'users':sequence[i],'conti_frequency':count}
+            df = pd.concat([df, pd.DataFrame([record])],ignore_index=True)
 
             # Move to next different element
             i = i + diff
@@ -276,9 +277,6 @@ class ReAudio(object):
                 # Append the edge node1, node2 to the edge list
                 self.edge_list.append((node1,node2))
 
-                # Print the edge
-                #print("{},{}".format(node1,node2))
-
                 # Write the edge in the file
                 file.write("{},{}\n".format(node1,node2))
 
@@ -301,7 +299,7 @@ class ReAudio(object):
                  Above average speaker: green
 
     """
-    def drawNetwork(self,edge_list=None):
+    def drawNetwork(self,edge_list=None,labels={1:'user-1',2:'user-2',3:'user-3',4:'user-4'}):
 
         # Generate the edge edge_list
         self.generateEdgeFile()
@@ -328,11 +326,11 @@ class ReAudio(object):
                 G.remove_edge(edge[0],edge[1])
 
                 # Add it again with updated weight
-                G.add_edge(edge[0],edge[1],weight=w+.15)
+                G.add_edge(edge[0],edge[1],weight=w+.35)
 
             else:
                 # If edge doesn't exist in the graph then add it with weight .5
-                G.add_edge(edge[0],edge[1],weight=.5)
+                G.add_edge(edge[0],edge[1],weight=.75)
 
         # Layout for showing the network
         pos = nx.spring_layout(G)
@@ -349,30 +347,29 @@ class ReAudio(object):
         sizes=[]
 
         sp_total = sum(sp_beh.values())
-        print(type(sp_beh.values()))
         sp_std = statistics.stdev(sp_beh.values())
 
         # iterate for each node in the graph
         for node in G:
-            print(node,':',sp_beh[node])
             size = float(sp_beh[node]*10)/sp_total
-            print (size)
             sizes.append( 400 * (size+1))
-            dev = float(sp_beh[node]-sp_total)/sp_std
+            dev = float(sp_beh[node]-sp_avg)/sp_std
+            print(dev)
             # Assign red color if speaking time is below average
             if dev <0:
                 color_map.append('red')
             # Assign plum color if speaking time is near average
-            elif dev<1 and dev>-1:
-                color_map.append('plum')
+            elif dev<.5 and dev>0:
+                color_map.append('green')
 
             # Assign green for above average
             else:
-                color_map.append('lawngreen')
+                color_map.append('plum')
 
-        labels = {1:'Adolfo',2:'Pankaj',3:'Reet',4:'Tobias'}
         # Draw the network
-        nx.draw(G, pos,node_size = sizes,node_color=color_map,  edges=edges,width=weights,labels=labels,with_labels=True)
+        nx.draw_networkx_nodes(G,pos,node_size = sizes,node_color=color_map)
+        nx.draw_networkx_edges(G,pos,width=weights)
+        nx.draw_networkx_labels(G,pos)
 
         # Show the network
         plt.show()
