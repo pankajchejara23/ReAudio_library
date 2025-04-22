@@ -11,6 +11,12 @@
 - Visualize interaction patterns
 - Built-in support for ReSpeaker's DoA and VAD algorithms
 
+## Installation
+Install the dependencies using the following command
+```sh
+pip install -r requirements.txt
+```
+
 ## Usage
 
 ### 1. Importing the Library
